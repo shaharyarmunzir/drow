@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    .navbar {
+      background-color: #f1f1f1;
+      overflow: hidden;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+    }
+
+    .navbar a {
+      color: #000;
+      text-decoration: none;
+      font-size: 17px;
+    }
+
+    .navbar a:hover {
+      background-color: #ddd;
+      color: black;
+    }
+
+    @media screen and (max-width: 600px) {
+      .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .navbar .menu-icon {
+        display: block;
+        cursor: pointer;
+        font-size: 24px;
+        order: -1;
+      }
+
+      .navbar .menu-items {
+        display: none;
+        width: 100%;
+      }
+
+      .navbar.active .menu-items {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .navbar a {
+        margin-bottom: 10px;
+        text-align: center;
+      }
+
+      .navbar #tool,
+      .navbar #size,
+      .navbar .color-options,
+      .navbar #backgroundColor,
+      .navbar .download-button {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      canvas {
+        width: 100%; /* Set canvas width to 100% of the parent container */
+      }
+    }
+
+    canvas {
+      border: 1px solid #000;
+      display: block;
+      margin: 20px auto;
+    }
+
+    .color-options {
+      display: flex;
+      margin-right: 10px;
+    }
+
+    .color-box {
+      width: 20px;
+      height: 20px;
+      margin-right: 5px;
+      cursor: pointer;
+    }
+
+    .download-button {
+      font-size: 16px;
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+  </style>
+  <title>Simple Drawing App</title>
+</head>
+<body>
+  <div class="navbar">
+    <div class="menu-icon" onclick="toggleMenu()">&#9776;</div>
+    <div class="menu-items">
+      <a href="#">Your Logo</a>
+      <select id="tool">
+        <option value="pencil">Pencil</option>
+        <option value="eraser">Eraser</option>
+      </select>
+      Size:
+      <input type="number" id="size" value="2" min="1" max="10">
+      Color:
+      <div class="color-options">
+        <div class="color-box" style="background-color: #000000" onclick="setColor('#000000')"></div>
+        <div class="color-box" style="background-color: #FF0000" onclick="setColor('#FF0000')"></div>
+        <div class="color-box" style="background-color: #00FF00" onclick="setColor('#00FF00')"></div>
+        <div class="color-box" style="background-color: #0000FF" onclick="setColor('#0000FF')"></div>
+        <div class="color-box" style="background-color: #FFFF00" onclick="setColor('#FFFF00')"></div>
+        <div class="color-box" style="background-color: #FF00FF" onclick="setColor('#FF00FF')"></div>
+      </div>
+      Background Color:
+      <input type="color" id="backgroundColor" value="#FFFFFF" onchange="setBackgroundColor()">
+      <button class="download-button" onclick="downloadCanvas()">Download</button>
+    </div>
+  </div>
+
+  <canvas id="drawingCanvas" width="800" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById('drawingCanvas');
+    const context = canvas.getContext('2d');
+    let isDrawing = false;
+    let currentTool = 'pencil';
+    let currentSize = 2;
+    let currentColor = '#000000';
+
+    function startDrawing(e) {
+      isDrawing = true;
+      draw(e);
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+      context.beginPath();
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+
+      const x = e.clientX || e.touches[0].clientX;
+      const y = e.clientY || e.touches[0].clientY;
+
+      context.lineWidth = currentSize;
+      context.lineCap = 'round';
+
+      if (currentTool === 'pencil') {
+        context.strokeStyle = currentColor;
+      } else if (currentTool === 'eraser') {
+        context.strokeStyle = '#fff'; // Use white color for eraser
+      }
+
+      context.lineTo(x - canvas.offsetLeft, y - canvas.offsetTop);
+      context.stroke();
+      context.beginPath();
+      context.moveTo(x - canvas.offsetLeft, y - canvas.offsetTop);
+    }
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mousemove', draw);
+
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchmove', draw);
+
+    const toolSelector = document.getElementById('tool');
+    toolSelector.addEventListener('change', (event) => {
+      currentTool = event.target.value;
+    });
+
+    const sizeInput = document.getElementById('size');
+    sizeInput.addEventListener('input', (event) => {
+      currentSize = event.target.value;
+    });
+
+    function setColor(color) {
+      currentColor = color;
+    }
+
+    function setBackgroundColor() {
+      const backgroundColor = document.getElementById('backgroundColor').value;
+      canvas.style.backgroundColor = backgroundColor;
+    }
+
+    function downloadCanvas() {
+      const dataURL = canvas.toDataURL();
+
+      const newCanvas = document.createElement('canvas');
+      newCanvas.width = canvas.width;
+      newCanvas.height = canvas.height;
+      const newContext = newCanvas.getContext('2d');
+
+      newContext.fillStyle = canvas.style.backgroundColor;
+      newContext.fillRect(0, 0, newCanvas.width, newCanvas.height);
+
+      const image = new Image();
+      image.onload = function () {
+        newContext.drawImage(image, 0, 0);
+        const a = document.createElement('a');
+        a.href = newCanvas.toDataURL();
+        a.download = 'drawing.png';
+        a.click();
+      };
+      image.src = dataURL;
+    }
+
+    function toggleMenu() {
+      document.querySelector('.navbar').classList.toggle('active');
+    }
+  </script>
+</body>
+</html>
